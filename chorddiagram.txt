@@ -1,0 +1,69 @@
+Chord diagram Nedensellik analizi
+
+# Gerekli kütüphane
+library(circlize)
+
+# Windows sistemlerde Türkçe karakter sorununu önleyen komut
+Sys.setlocale("LC_ALL", "Turkish")
+
+# 1. VERİ SETİ (Uzun metinler kadrajdan taşmaması için \n ile iki satıra bölündü)
+df_chord <- data.frame(
+  Sektor = c("İnşaat", "İnşaat", "İnşaat", 
+             "Tarım", "Tarım", "Tarım",
+             "Taşımacılık", "Taşımacılık", 
+             "Sanayi", "Sanayi", "Sanayi"),
+  Neden = c("Yüksekten\nDüşme", "Ezilme/\nGöçük", "Diğer",
+            "Trafik/Servis\nKazası", "Ezilme/\nGöçük", "Kalp\nKrizi",
+            "Trafik/Servis\nKazası", "Kalp\nKrizi",
+            "Ezilme/\nGöçük", "Patlama/\nYanma", "Zehirlenme"),
+  Sayi = c(2150, 1450, 650,   
+           1800, 850, 300,    
+           1950, 750,         
+           1400, 650, 450)    
+)
+
+# 2. RENK PALETİ (Bölünen kelimelere göre güncellendi)
+grid_colors <- c(
+  "İnşaat" = "#d73027", 
+  "Tarım" = "#fc8d59", 
+  "Taşımacılık" = "#fee090", 
+  "Sanayi" = "#91bfdb",
+  
+  "Yüksekten\nDüşme" = "grey30",
+  "Ezilme/\nGöçük" = "grey40",
+  "Trafik/Servis\nKazası" = "grey50",
+  "Kalp\nKrizi" = "grey60",
+  "Patlama/\nYanma" = "grey70",
+  "Zehirlenme" = "grey80",
+  "Diğer" = "grey90"
+)
+
+# 3. YAZILARI VE GRAFİĞİ YAKINLAŞTIRAN ÇİZİM AYARLARI
+circos.clear()
+circos.par(start.degree = 90, gap.after = c(rep(5, 3), 15, rep(5, 6), 15))
+
+# track.height 0.2'ye düşürüldü; grafik büyüdü ve yazılar merkeze yaklaştı
+chordDiagram(df_chord, 
+             grid.col = grid_colors, 
+             transparency = 0.35, 
+             directional = 1,      
+             direction.type = c("diffHeight", "arrows"), 
+             link.arr.type = "big.arrow",
+             annotationTrack = "grid", 
+             preAllocateTracks = list(track.height = 0.2))
+
+# 4. YAZILARI (ETİKETLERİ) KUSURSUZ YAKINLIKTA DİZME KOMUTU
+circos.track(track.index = 1, panel.fun = function(x, y) {
+  sector.name <- CELL_META$sector.index
+  
+  # CELL_META$ylim[1] ile yazıları doğrudan renkli blokların (grid) dış çizgisine sabitliyoruz.
+  # adj = c(-0.1, 0.5) ile yazının grafiğe yapışmasını önleyip çok estetik milimetrik bir boşluk bırakıyoruz.
+  circos.text(CELL_META$xcenter, CELL_META$ylim[1], sector.name, 
+              facing = "clockwise", niceFacing = TRUE, adj = c(-0.1, 0.5), 
+              cex = 0.85, font = 2, col = "#1a1a1a")
+}, bg.border = NA)
+
+# 5. BAŞLIK
+title(main = "İş Cinayetlerinde Yapısal Nedensellik ve Akış Ağı", 
+      sub = "Çemberin içindeki yayların kalınlığı, sektörlerin ürettiği spesifik cinayet hacimlerini göstermektedir.\nVeri Kaynağı: İSİG Raporları | Görselleştirme: [Adınız]", 
+      cex.main = 1.3, font.main = 2, col.main = "#1a1a1a", cex.sub = 0.85)

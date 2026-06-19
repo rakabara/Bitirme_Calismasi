@@ -1,0 +1,64 @@
+göçmen isçi turkiye haritası 
+
+# 1. HARİTA ALTLIĞI: Sadece Türkiye
+turkiye <- map_data("world", region = "Turkey")
+
+# 2. GÜNCELLENMİŞ VERİ SETİ: Metinler daire içine sığacak şekilde sadeleştirildi
+goc_verisi <- data.frame(
+  Ulke = c("Suriye\n610", "Afganistan\n250", "İran\n80", "Türkmenistan\n50", "Diğer\n134"),
+  
+  # Dairelerin harita etrafındaki (havadaki) X ve Y merkez koordinatları
+  x_bas = c(39.0, 48.5, 47.0, 44.0, 24.5),
+  y_bas = c(32.0, 36.5, 32.5, 43.5, 43.5),
+  
+  # Okların bitiş koordinatları (Türkiye sınırları)
+  x_bit = c(37.5, 44.0, 44.0, 41.5, 27.5),
+  y_bit = c(36.5, 38.5, 37.5, 41.5, 41.0),
+  
+  # Daire hacimleri
+  olum = c(610, 250, 80, 50, 134)
+)
+
+# 3. KUSURSUZ HİZALANMIŞ YENİ NESİL AKIŞ HARİTASI
+ggplot() +
+  
+  # a. Türkiye Haritası
+  geom_polygon(data = turkiye, aes(x = long, y = lat, group = group),
+               fill = "grey85", color = "white", size = 0.7) +
+  
+  # b. Akış Okları (Dairelerin altından Türkiye'ye uzanır)
+  geom_curve(data = goc_verisi,
+             aes(x = x_bas, y = y_bas, xend = x_bit, yend = y_bit),
+             curvature = 0.15, color = "#b2182b", alpha = 0.5, size = 1.2,
+             arrow = arrow(length = unit(0.3, "cm"), type = "closed")) +
+  
+  # c. Daireler (Tüm metinleri kapsayacak kadar büyütüldü)
+  geom_point(data = goc_verisi, aes(x = x_bas, y = y_bas, size = olum),
+             color = "#d7191c", alpha = 0.95) +
+  
+  # d. MERKEZİ METİNLER (vjust kaldırıldı, yazılar tam ortaya beyaz renkle oturtuldu)
+  geom_text(data = goc_verisi, aes(x = x_bas, y = y_bas, label = Ulke),
+            color = "black", fontface = "bold", size = 4.5, lineheight = 0.9) +
+  
+  # Dairelerin ekrandaki minimum ve maksimum büyüklükleri
+  scale_size_continuous(range = c(22, 55), guide = "none") +
+  
+  # Harita kadrajının daireleri kesmemesi için genişletilmesi
+  coord_fixed(xlim = c(22, 51), ylim = c(30, 46)) +
+  
+  # 4. EDİTORYAL BAĞLAM
+  labs(
+    title = "Göçmen İşçi Cinayetlerinde Kaynak Ülkeler",
+    subtitle = "Türkiye çevresindeki dairelerin büyüklüğü, savaştan ve yoksulluktan kaçarak ucuz\nişgücü haline getirilen ve hayatını kaybeden 1124 işçinin hacmini göstermektedir.",
+    
+  ) +
+  
+  # 5. MİNİMALİST TASARIM
+  theme_void(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 18, color = "black", margin = margin(b=8)),
+    plot.subtitle = element_text(size = 13, color = "grey30", margin = margin(b=25)),
+    plot.caption = element_text(size = 10, color = "grey50", hjust = 0, margin = margin(t=15)),
+    plot.margin = margin(20, 20, 20, 20),
+    plot.background = element_rect(fill = "white", color = NA)
+  )

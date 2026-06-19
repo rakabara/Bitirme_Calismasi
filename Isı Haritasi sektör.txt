@@ -1,0 +1,72 @@
+Isı Haritasi sektör
+
+
+# Gerekli Kütüphaneler
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# Windows sistemlerde Türkçe karakter sorununu önleyen komut
+Sys.setlocale("LC_ALL", "Turkish")
+
+# 1. VERİYİ İÇERİ AKTARMA VE UZUN FORMATA ÇEVİRME
+df <- read.csv2("sektorler.csv")
+
+# Isı haritası (zaman x sektör) kurgusu için Bilinmeyen ve Toplam'ı atıyoruz
+df_heat <- df %>%
+  select(-Bilinmeyen, -Toplam) %>%
+  pivot_longer(cols = -Yil, names_to = "Sektor", values_to = "Olum")
+
+# Sektör isimlerindeki alt tireleri estetik bir biçimde boşlukla değiştirme
+df_heat$Sektor <- gsub("_", " ", df_heat$Sektor)
+df_heat$Sektor <- gsub("İsler", "İşler", df_heat$Sektor)
+
+# 2. VERİ HİKAYECİLİĞİ: ODAK HİYERARŞİSİ
+# Grafikte en çok ölümün yaşandığı sektörlerin en üstte, en az ölümlerin en altta durması
+# okuyucunun 'Ölümcül Hiyerarşiyi' algılamasını kolaylaştırır.
+sektor_siralamasi <- df_heat %>%
+  group_by(Sektor) %>%
+  summarise(Toplam = sum(Olum)) %>%
+  arrange(Toplam) %>%
+  pull(Sektor)
+
+df_heat$Sektor <- factor(df_heat$Sektor, levels = sektor_siralamasi)
+
+# 3. VERİ GAZETECİLİĞİ ODAKLI ISI HARİTASI (HEATMAP) TASARIMI
+ggplot(df_heat, aes(x = as.factor(Yil), y = Sektor, fill = Olum)) +
+  
+  # Hücrelerin çizimi (Aralarına beyaz ince bir sınır çekerek temiz bir görünüm veriyoruz)
+  geom_tile(color = "white", size = 0.6) +
+  
+  # Veri Bilişi (Cognition): Koyu hücrelerin üstündeki rakamları beyaz, açık hücrelerdekileri siyah yapma
+  geom_text(aes(label = Olum, color = Olum > 150), size = 3.5, fontface = "bold") +
+  scale_color_manual(values = c("black", "white"), guide = "none") +
+  
+  # Sıralı Renk Skalası (Sequential Color): Sıcaktan (Açık) Kriz Rengine (Koyu Bordo) geçiş
+  scale_fill_gradient(low = "#fff5f0", high = "#67000d", name = "Ölüm\nSayısı") +
+  
+  # Editoryal Bağlam ve Başlıklar
+  labs(
+    title = "İş Cinayetlerinin 13 Yıllık Isı Haritası (2013-2025)",
+    subtitle = "Satırlardaki renk yoğunluğu, o sektördeki sömürü ve krizin kronikliğini göstermektedir.\nİnşaat, Tarım ve Taşımacılık sektörleri 13 yıl boyunca kesintisiz bir 'kırmızı alarm' vermektedir.",
+    x = "YIL",
+    y = "",
+    
+  ) +
+  
+  # 4. GÖRSEL TEMİZLİK (Minimalist Tableau Stili)
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 18, color = "#2c3e50", margin = margin(b = 8)),
+    plot.subtitle = element_text(size = 13, color = "#34495e", margin = margin(b = 20)),
+    plot.caption = element_text(size = 10, color = "grey50", hjust = 0, margin = margin(t = 15)),
+    
+    # Eksen etiketlerinin ayarlanması
+    axis.text.x = element_text(face = "bold", color = "grey30", margin = margin(t = 5)),
+    axis.text.y = element_text(face = "bold", color = "grey20", margin = margin(r = 5)),
+    
+    # Isı haritasında kafa karıştıran arka plan ızgaralarını tamamen silme
+    panel.grid = element_blank(), 
+    legend.title = element_text(face = "bold", size = 11),
+    plot.margin = margin(20, 20, 20, 20)
+  )

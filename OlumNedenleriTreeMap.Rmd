@@ -1,0 +1,80 @@
+---
+title: "OlumNedenleriTreeMap"
+author: "Rafet Ali Kaba"
+date: "2026-06-19"
+output: html_document
+---
+
+```{r}
+# Gerekli Kütüphaneler
+library(ggplot2)
+library(treemapify) # Ağaç haritası eklentisi
+library(dplyr)
+library(tidyr)
+
+# Windows sistemlerde Türkçe karakter sorununu önleyen komut
+Sys.setlocale("LC_ALL", "Turkish")
+
+# 1. VERİYİ İÇERİ AKTARMA VE TEMİZLEME
+df <- read.csv2("olum_nedenleri.csv")
+names(df)[1] <- "Yil"
+
+# Sadece 2013-2025 genel toplam satırını alıyoruz (Genel Toplam sütununu atarak)
+df_toplam <- df %>%
+  filter(Yil == "2013-2025") %>%
+  select(-Yil, -Toplam) %>%
+  pivot_longer(cols = everything(), names_to = "Neden", values_to = "Olum") %>%
+  mutate(Olum = as.numeric(Olum)) %>%
+  arrange(desc(Olum)) # Büyükten küçüğe sıralıyoruz
+
+# 2. EDİTORYAL DÜZENLEME: Kategori İsimlerini Türkçeleştirme ve Estetik Boşluklar
+# Uzun kelimeleri blokların içine sığdırmak için \n (alt satıra geç) komutu ile bölüyoruz
+df_toplam$Neden <- case_when(
+  df_toplam$Neden == "Trafik_Servis_Kazasi" ~ "Trafik / Servis\nKazası",
+  df_toplam$Neden == "Ezilme_Gocuk" ~ "Ezilme / Göçük",
+  df_toplam$Neden == "Dusme" ~ "Yüksekten\nDüşme",
+  df_toplam$Neden == "Kalp_Krizi_Beyin_Kanaması" ~ "Kalp Krizi /\nBeyin Kanaması",
+  df_toplam$Neden == "Covid_19" ~ "Covid-19",
+  df_toplam$Neden == "Zehirlenme_Bogulma" ~ "Zehirlenme /\nBoğulma",
+  df_toplam$Neden == "Elektrik_Carpmasi" ~ "Elektrik\nÇarpması",
+  df_toplam$Neden == "Diger_Nedenler" ~ "Diğer\nNedenler",
+  df_toplam$Neden == "Siddet" ~ "Şiddet",
+  df_toplam$Neden == "Intihar" ~ "İntihar",
+  df_toplam$Neden == "Patlama_Yanma" ~ "Patlama / Yanma",
+  df_toplam$Neden == "Nesne_Dusemsi_Carpmasi" ~ "Nesne Çarpması",
+  df_toplam$Neden == "Kesilme_Kopma" ~ "Kesilme / Kopma",
+  df_toplam$Neden == "Deprem" ~ "Deprem",
+  TRUE ~ df_toplam$Neden
+)
+
+# 3. VERİ GAZETECİLİĞİ ODAKLI AĞAÇ HARİTASI (TREEMAP) TASARIMI
+ggplot(df_toplam, aes(area = Olum, fill = Olum, label = paste0(Neden, "\n", Olum))) +
+  
+  # Blokların çizimi ve aralarındaki temiz beyaz sınırlar
+  geom_treemap(color = "white", size = 2) +
+  
+  # Blok içindeki metinlerin ayarlanması
+  geom_treemap_text(color = "white", place = "centre", grow = FALSE, fontface = "bold", size = 13) +
+  
+  # SIRALI RENK (Sequential Color): Düşük ölümden yüksek ölüme (koyu bordo) hacimsel renk geçişi
+  scale_fill_gradient(low = "#ffbaba", high = "#08306b", guide = "none") +
+  
+  # Editoryal Bağlam ve Başlıklar
+  labs(
+    title = "İş Cinayeti Nedenlerinin 13 Yıllık Hacimsel Dağılımı (2013-2025)",
+    subtitle = "Ağaç haritasındaki blokların büyüklüğü ve rengin koyuluğu, cinayet nedenlerinin ağırlığını yansıtmaktadır.\nTrafik kazaları, ezilme ve yüksekten düşme tablonun neredeyse yarısını kaplamaktadır.",
+    
+  ) +
+  
+  # Temiz ve Modern Tema
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 19, color = "#2c3e50", margin = margin(b = 8)),
+    plot.subtitle = element_text(size = 13, color = "#34495e", margin = margin(b = 20)),
+    plot.caption = element_text(size = 10, color = "grey50", hjust = 0, margin = margin(t = 15)),
+    plot.margin = margin(20, 20, 20, 20)
+  )
+
+
+```
+

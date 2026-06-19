@@ -1,0 +1,68 @@
+---
+title: "MESEM"
+author: "Rafet Ali Kaba"
+date: "2026-06-19"
+output: html_document
+---
+
+```{r}
+# Gerekli Kütüphaneler (Eğer açık değilse)
+library(ggplot2)
+library(dplyr)
+
+# 1. SADECE ÇOCUK İŞÇİ VERİLERİNİ FİLTRELEME
+# Daha önce oluşturduğumuz df_uzun veri setinin içinden sadece 17 yaş altını ayırıyoruz
+df_yas <- read.csv2("yasss.csv")
+names(df_yas) <- c("Yil", "Cocuk_14_Alt", "Genc_15_17", "GencEriskin_18_27", "Eriskin_28_50", "Emekli_51_64", "Emekli_65_Ust", "Bilinmeyen")
+
+# 2. VERİYİ UZUN (LONG) FORMATA ÇEVİRME
+df_uzun <- df_yas %>%
+  pivot_longer(cols = -Yil, names_to = "Yas_Grubu", values_to = "Olum")
+
+df_cocuk <- df_uzun %>%
+  filter(Yas_Grubu %in% c("14 Yaş ve Altı (Çocuk)", "15-17 Yaş (Çocuk/Genç)"))
+
+# 2. ÇİZGİ GRAFİK (LINE CHART) TASARIMI
+ggplot(df_cocuk, aes(x = Yil, y = Olum, color = Yas_Grubu, group = Yas_Grubu)) +
+  
+  # Çizgi kalınlığı ve veri noktalarının büyüklüğü
+  geom_line(linewidth = 1.5) +
+  geom_point(size = 3) +
+  
+  # MESEM KIRILMASINI GÖSTEREN DİKEY ÇİZGİ VE YATAY METİN
+  geom_vline(xintercept = 2023.5, linetype = "dashed", color = "darkblue", linewidth = 1) +
+  annotate("text", x = 2023.2, y = 85, label = "MESEM Politikaları", 
+           color = "darkblue", angle = 0, hjust = 1, fontface = "bold") +
+  
+  # X eksenindeki yılları virgüllü değil, tam yıl olarak gösterme
+  scale_x_continuous(breaks = 2013:2025) +
+  
+  # Renk Paleti (Çocuk işçi ölümlerinin ciddiyetini vurgulamak için kırmızı/turuncu tonları)
+  scale_color_manual(values = c(
+    "14 Yaş ve Altı (Çocuk)" = "#8b0000",   # Koyu kırmızı
+    "15-17 Yaş (Çocuk/Genç)" = "orange"    # Turuncu
+  )) +
+  
+  labs(
+    title = "Çocuk İşçi Cinayetlerinde MESEM Kırılması",
+    subtitle = "Özellikle 2024 ve 2025 yıllarında devletin desteklediği MESEM uygulamalarının,\n15-17 yaş grubundaki ölümlerde yarattığı sıçrama.",
+    x = "YILLAR",
+    y = "Hayatını Kaybeden Çocuk İşçi Sayısı",
+    
+  ) +
+  
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16, color = "#1a1a1a"),
+    plot.subtitle = element_text(size = 12, color = "#4d4d4d", margin = margin(b=15)),
+    legend.position = "bottom", # Lejantı grafiğin altına alarak alanı genişletiyoruz
+    legend.title = element_blank(),
+    legend.text = element_text(face = "bold", size = 11),
+    axis.text.x = element_text(angle = 45, hjust = 1, face = "bold"),
+    axis.text.y = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+
+
+```
+

@@ -1,0 +1,91 @@
+---
+title: "Covid19"
+author: "Rafet Ali Kaba"
+date: "2026-06-19"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+install.packages("ggrepel")
+library(ggrepel) # Çizgi sonlarına etiket eklemek için
+
+# Windows sistemlerde Türkçe karakter sorununu önleyen komut
+Sys.setlocale("LC_ALL", "Turkish")
+
+# 1. VERİYİ İÇERİ AKTARMA VE TEMİZLEME
+df <- read_xlsx("olum_nedenleri.xlsx")
+names(df)[1] <- "Yil" # İlk sütunun adını Yıl olarak düzeltiyoruz
+
+# Sadece tezin odağındaki 5 ana nedeni seçiyor, genel toplam satırını atıyoruz
+df_temiz <- df %>%
+  filter(Yil != "2013-2025") %>%
+  select(Yil, Trafik_Servis_Kazasi, Ezilme_Gocuk, Dusme, Kalp_Krizi_Beyin_Kanaması, Covid_19) %>%
+  mutate(Yil = as.numeric(as.character(Yil)))
+
+# Veriyi ggplot2'nin okuyabileceği uzun (long) formata çevirme
+df_uzun <- df_temiz %>%
+  pivot_longer(cols = -Yil, names_to = "Neden", values_to = "Olum")
+
+# 2. EDİTORYAL DÜZENLEME: İsimleri Türkçeleştirme
+df_uzun$Neden <- case_when(
+  df_uzun$Neden == "Trafik_Servis_Kazasi" ~ "Trafik / Servis Kazası",
+  df_uzun$Neden == "Ezilme_Gocuk" ~ "Ezilme / Göçük",
+  df_uzun$Neden == "Dusme" ~ "Yüksekten Düşme",
+  df_uzun$Neden == "Kalp_Krizi_Beyin_Kanaması" ~ "Kalp Krizi (Karoshi)",
+  df_uzun$Neden == "Covid_19" ~ "Covid-19"
+)
+
+# Çizgilerin sağına isimleri yazdırmak için etiket koordinatlarını belirleme
+# (Covid-19'un zirve yaptığı 2021 yılını özel olarak yakalıyoruz)
+df_etiket <- df_uzun %>% 
+  filter(Yil == 2025 | (Neden == "Covid-19" & Yil == 2021))
+
+# 3. VERİ GAZETECİLİĞİ ODAKLI ÇOKLU ÇİZGİ GRAFİK TASARIMI
+ggplot(df_uzun, aes(x = Yil, y = Olum, color = Neden)) +
+  
+  # Çizgiler ve noktalar
+  geom_line(size = 1.5, alpha = 0.85) +
+  geom_point(size = 3.5, fill = "white", shape = 21, stroke = 1.5) +
+  
+  # DOĞRUDAN ETİKETLEME (Direct Labeling): Okuyucuyu lejant aramakla yormamak için
+  geom_text_repel(data = df_etiket, aes(label = Neden), 
+                  nudge_x = 0.7, fontface = "bold", size = 4.5, hjust = 0, direction = "y") +
+  
+  # Renk Paleti: Klasikleşen krizleri kırmızı/turuncu tonlarda, hastalıkları mavi tonlarda kodladık
+  scale_color_manual(values = c(
+    "Trafik / Servis Kazası" = "#b2182b",
+    "Ezilme / Göçük" = "#ef8a62",
+    "Yüksekten Düşme" = "darkgreen",
+    "Kalp Krizi (Karoshi)" = "#67a9cf",
+    "Covid-19" = "#2166ac"
+  ), guide = "none") + # Lejantı siliyoruz
+  
+  # X eksenini 2013'ten 2025'e kadar tek tek yazdırma ve etiketlere sağdan yer (2028'e kadar) bırakma
+  scale_x_continuous(breaks = 2013:2025, limits = c(2013, 2028)) + 
+  
+  # Başlık ve Bağlam
+  labs(
+    title = "İş Cinayetlerinde Pandemi Etkisi",
+    subtitle = "\n2020 ve 2021 yıllarında Covid-19 salgını çalışma yaşamında benzeri görülmemiş bir tahribat yaratmıştır.",
+    x = "", 
+    y = "Ölüm Sayısı",
+    
+  ) +
+  
+  # Minimalist Haber Tasarımı Teması
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 18, color = "#1a1a1a", margin = margin(b=8)),
+    plot.subtitle = element_text(size = 13, color = "#4d4d4d", margin = margin(b=20)),
+    axis.text.x = element_text(face = "bold", color = "#1a1a1a"),
+    axis.text.y = element_text(face = "bold", color = "#1a1a1a"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_line(linetype = "dotted", color = "grey80"),
+    plot.margin = margin(20, 20, 20, 20)
+  )
+
+```
+

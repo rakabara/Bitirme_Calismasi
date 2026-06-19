@@ -1,0 +1,60 @@
+sektörler genell
+
+library(tidyverse)
+library(readxl)
+library(scales)
+getwd()
+# 1. Veriyi İçeri Alma (Tırnak içindeki dosya adını kendi Excel adına göre değiştir)
+df <- read_excel("sektorler.xlsx") 
+
+# 2. Veri Manipülasyonu (Uzun Formata Çevirme ve Oran Hesaplama)
+df_uzun <- df %>%
+  select(-Toplam) %>% # Toplam sütununu oran hesabı için çıkarıyoruz
+  pivot_longer(cols = -Yil, names_to = "Sektor", values_to = "Olum_Sayisi") %>%
+  group_by(Yil) %>%
+  mutate(Oran = Olum_Sayisi / sum(Olum_Sayisi, na.rm = TRUE)) %>%
+  ungroup()
+
+# 3. Kategorik Değişken Yapılandırması 
+# Sektörleri factor olarak tanımlıyoruz. fct_reorder ile en çok ölüm olan sektörü en alta (en ağır katman) alıyoruz.
+df_uzun <- df_uzun %>%
+  mutate(Sektor = factor(Sektor),
+         Sektor = fct_reorder(Sektor, Olum_Sayisi, .fun = sum, .desc = FALSE))
+
+# 4. İstatistiksel Testler İçin İskelet Kurulumu (Named Lists)
+modeller <- list(
+  trend_formulu = Olum_Sayisi ~ Yil,
+  oran_formulu = Oran ~ Yil,
+  test_sonuclari = list() # İleride Cochran-Armitage sonuçlarını buraya atayacağız
+)
+
+# 5. Brütalist Katmanlar Grafiği (Makro Bilanço)
+grafik<-ggplot(df_uzun, aes(x = Yil, y = Oran, fill = Sektor)) +
+  # Katmanlar arası keskin siyah çizgilerle soyut ve sert bir yapı
+  geom_area(color = "#0a0a0a", linewidth = 0.4, alpha = 0.95) + 
+  # Kül, kömür ve kan kırmızısı tonlarını andıran karanlık renk paleti
+  scale_fill_viridis_d(option = "inferno", direction = -1) + 
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(fill = "#121212", color = NA),
+    panel.background = element_rect(fill = "#121212", color = NA),
+    text = element_text(color = "gray90"),
+    axis.text = element_text(color = "gray60", size = 10),
+    panel.grid.major = element_line(color = "#2a2a2a", linewidth = 0.2),
+    panel.grid.minor = element_blank(),
+    legend.position = "right",
+    legend.background = element_rect(fill = "#121212"),
+    legend.text = element_text(color = "gray70", size = 9),
+    legend.title = element_text(color = "gray90", face = "bold"),
+    plot.title = element_text(size = 16, face = "bold", margin = margin(b = 10))
+  ) +
+  scale_x_continuous(breaks = seq(2013, 2025, 2)) +
+  scale_y_continuous(labels = percent_format()) +
+  labs(
+    title = "Türkiye İş Cinayetleri (2013-2025)",
+    subtitle = "Sektörel Ağırlıkların Yapısal Kayması",
+    x = "Yıl", 
+    y = "Toplam Ölüm İçindeki Pay",
+    fill = "Sektörler"
+  )
+print(grafik)

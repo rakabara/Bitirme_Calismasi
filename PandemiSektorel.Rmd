@@ -1,0 +1,86 @@
+---
+title: "PandemiSektorel"
+author: "Rafet Ali Kaba"
+date: "2026-06-19"
+output: html_document
+---
+
+```{r}
+# Gerekli Kütüphaneler
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# Windows sistemlerde Türkçe karakter sorununu önleyen komut
+Sys.setlocale("LC_ALL", "Turkish")
+
+# 1. VERİYİ İÇERİ AKTARMA
+df_sektor <- read.csv2("sektorler.csv")
+
+# 2. VERİ HİKAYECİLİĞİ PRENSİBİ: GÜRÜLTÜYÜ AZALTMA VE GRUPLAMA
+# Sadece en çok ölüm olan 3 ana sektörü ve pandemiden etkilenen 2 sektörü ayırıyor, 
+# gerisini görsel kalabalık yapmaması için "Diğer" kategorisinde topluyoruz.
+df_stream <- df_sektor %>%
+  select(-Toplam, -Bilinmeyen) %>%
+  pivot_longer(cols = -Yil, names_to = "Sektor", values_to = "Olum") %>%
+  mutate(Ana_Sektorler = case_when(
+    Sektor == "Saglik_Sosyal_Hizmetler" ~ "Sağlık ve Sosyal Hizmetler",
+    Sektor == "Ticaret_Buro_Egitim_Sinema" ~ "Ticaret, Büro ve Eğitim",
+    Sektor == "Insaat_Yol" ~ "İnşaat ve Yol",
+    Sektor == "Tarim_Orman" ~ "Tarım ve Orman",
+    Sektor == "Tasimacilik" ~ "Taşımacılık",
+    TRUE ~ "Diğer Tüm Sektörler"
+  )) %>%
+  group_by(Yil, Ana_Sektorler) %>%
+  summarise(Olum = sum(Olum), .groups = "drop")
+
+# Sektörleri grafikte en büyükler altta, pandemide sıçrayanlar üstte akacak şekilde sıralıyoruz
+df_stream$Ana_Sektorler <- factor(df_stream$Ana_Sektorler,
+                                  levels = c("Diğer Tüm Sektörler", "Taşımacılık", "Tarım ve Orman", "İnşaat ve Yol", 
+                                             "Ticaret, Büro ve Eğitim", "Sağlık ve Sosyal Hizmetler"))
+
+# 3. AKIŞ GRAFİĞİ (STREAM GRAPH / STACKED AREA) TASARIMI
+ggplot(df_stream, aes(x = Yil, y = Olum, fill = Ana_Sektorler)) +
+  
+  # Stream etkisini yaratan, dalgaların birbirinin üstüne yığıldığı alan fonksiyonu
+  geom_area(alpha = 0.85, color = "white", linewidth = 0.3) +
+  
+ 
+  
+  # Yılları eksende net gösterme
+  scale_x_continuous(breaks = 2013:2025) +
+  
+  # RENK PALETİ: Rutin sektörler için gri/mavi tonları, 
+  # pandeminin vurduğu iki hedef sektör için kan kırmızısı ve turuncu
+  scale_fill_manual(values = c(
+    "Sağlık ve Sosyal Hizmetler" = "#b2182b", # Koyu Kırmızı
+    "Ticaret, Büro ve Eğitim" = "#d6604d",    # Turuncu/Kırmızı
+    "İnşaat ve Yol" = "#92c5de",
+    "Tarım ve Orman" = "#4393c3",
+    "Taşımacılık" = "#2166ac",
+    "Diğer Tüm Sektörler" = "#e0e0e0"         # Zemin Grisi
+  )) +
+  
+  labs(
+    title = "Pandeminin Sektörel Dağılıma Etkisi: Sağlık ve Büro Sektörlerindeki Etki",
+  
+    x = "YILLAR",
+    y = "Hayatını Kaybeden İşçi Sayısı",
+    fill = "Sektörel Dağılım",
+    
+  ) +
+  
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 15, color = "#1a1a1a", margin = margin(b=8)),
+    plot.subtitle = element_text(size = 11, color = "#4d4d4d", margin = margin(b=15)),
+    legend.position = "right",
+    legend.title = element_text(face = "bold", size = 12),
+    axis.text.x = element_text(angle = 45, hjust = 1, face = "bold", color = "#1a1a1a"),
+    axis.text.y = element_text(face = "bold", color = "#1a1a1a"),
+    panel.grid.minor = element_blank()
+  )
+
+
+```
+

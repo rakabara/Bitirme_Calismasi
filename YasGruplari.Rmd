@@ -1,0 +1,78 @@
+---
+title: "YasGruplari"
+author: "Rafet Ali Kaba"
+date: "2026-06-19"
+output: html_document
+---
+
+```{r}
+# Gerekli Kütüphaneler
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(scales) 
+
+# Windows sistemlerde Türkçe karakter sorununu önleyen komut
+Sys.setlocale("LC_ALL", "Turkish")
+
+# 1. KENDİ HAZIRLADIĞINIZ VERİYİ İÇERİ AKTARMA VE SÜTUNLARI TEMİZLEME
+df_yas <- read.csv2("yasss.csv")
+
+# NA HATASINI ÇÖZEN ADIM: Sütun isimlerini R'ın bozmasına izin vermeden, 
+# doğrudan grafikte kullanacağımız temiz İngilizce karakterli metinlere çeviriyoruz:
+names(df_yas) <- c("Yil", "Cocuk_14_Alt", "Genc_15_17", "GencEriskin_18_27", "Eriskin_28_50", "Emekli_51_64", "Emekli_65_Ust", "Bilinmeyen")
+
+# 2. VERİYİ UZUN (LONG) FORMATA ÇEVİRME
+df_uzun <- df_yas %>%
+  pivot_longer(cols = -Yil, names_to = "Yas_Grubu", values_to = "Olum")
+
+# 3. KATEGORİ SIRALAMASI VE ETİKETLERİ BELİRLEME (Artık NA vermeyecek)
+# Sizin 7 kategorinize (65+ dahil) uygun şekilde güncellenmiştir.
+df_uzun$Yas_Grubu <- factor(df_uzun$Yas_Grubu,
+                            levels = c("Bilinmeyen", "Emekli_65_Ust", "Emekli_51_64", "Eriskin_28_50", "GencEriskin_18_27", "Genc_15_17", "Cocuk_14_Alt"),
+                            labels = c("Bilinmeyen", "65 Yaş ve Üstü (Emekli İşçi)", "51-64 Yaş (Yaşlı İşçi)", "28-50 Yaş (Ana İşgücü)", "18-27 Yaş (Genç İşçi)", "15-17 Yaş (Çocuk/Genç)", "14 Yaş ve Altı (Çocuk)"))
+
+# 4. %100 YIĞILMIŞ ÇUBUK GRAFİK TASARIMI
+ggplot(df_uzun, aes(x = as.factor(Yil), y = Olum, fill = Yas_Grubu)) +
+  
+  geom_bar(stat = "identity", position = "fill", width = 0.75, color = "white", linewidth = 0.3) +
+  
+  # Y eksenini % (Yüzde) formatında gösterme
+  scale_y_continuous(labels = scales::percent_format()) +
+  
+  # YENİ RENK PALETİ: 65+ yaş da eklendiği için mavi tonlarını zenginleştirdik
+  scale_fill_manual(values = c(
+    "14 Yaş ve Altı (Çocuk)" = "#8b0000",
+    "15-17 Yaş (Çocuk/Genç)" = "#d73027",
+    "18-27 Yaş (Genç İşçi)" = "#f46d43",
+    "28-50 Yaş (Ana İşgücü)" = "#74add1",
+    "51-64 Yaş (Yaşlı İşçi)" = "#4575b4",
+    "65 Yaş ve Üstü (Emekli İşçi)" = "#313695",
+    "Bilinmeyen" = "#e0e0e0"
+  )) +
+  
+  labs(
+    title = "Türkiye'de İş Cinayetlerinin Oransal Dağılımı: Kimleri Kaybediyoruz?",
+    
+    x = "YILLAR",
+    y = "Toplam Ölümler İçindeki Oranı (%)",
+    fill = "Yaş Grupları",
+    
+  ) +
+  
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 17, color = "#1a1a1a", margin = margin(b=8)),
+    plot.subtitle = element_text(size = 12, color = "#4d4d4d", margin = margin(b=20)),
+    legend.position = "right",
+    legend.title = element_text(face = "bold", size = 12),
+    legend.text = element_text(size = 11),
+    axis.text.x = element_text(angle = 45, hjust = 1, face = "bold", color = "#1a1a1a"),
+    axis.text.y = element_text(face = "bold", color = "#1a1a1a"),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+
+```
+

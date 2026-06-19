@@ -1,0 +1,103 @@
+---
+title: "2025IzopletHarita"
+author: "Rafet Ali Kaba"
+date: "2026-06-19"
+output: html_document
+---
+
+```{r}
+# Gerekli Kütüphaneler 
+library(ggplot2)
+library(dplyr)
+library(sf)
+
+# Windows sistemlerde Türkçe karakter sorununu önleyen komut
+Sys.setlocale("LC_ALL", "Turkish")
+
+# Olası geometri hatalarını (st_difference hatası) engellemek için küresel hesaplamayı kapatıyoruz
+sf_use_s2(FALSE)
+
+# 1. KENDİ JSON HARİTA DOSYANIZI OKUMA (Aynı harita zeminini kullanıyoruz)
+#turkiye_harita <- st_read("tr-cities-ansi.json") 
+
+# 2. 2025 YILI İSİG VERİLERİ (Toplam 2105 ölümün yaşandığı ana havzalar)
+df_2025 <- data.frame(
+  Sehir = c("İstanbul", "İzmir", "Antalya", "Ankara", "Hatay", "Bursa", "Sakarya", 
+            "Kocaeli", "Manisa", "Muğla", "Denizli", "Şanlıurfa", "Gaziantep", "Mersin", "Konya"),
+  Olum = c(277, 75, 71, 65, 64, 62, 60, 49, 48, 47, 46, 46, 45, 45, 44),
+  # 2025'te kırımı yaşayan şehirlerin gerçek koordinatları
+  Boylam = c(28.97, 27.14, 30.71, 32.85, 36.16, 29.06, 30.40, 29.88, 27.42, 28.36, 29.09, 38.79, 37.38, 34.64, 32.48),
+  Enlem = c(41.00, 38.42, 36.89, 39.93, 36.20, 40.18, 40.77, 40.76, 38.61, 37.21, 37.77, 37.16, 37.06, 36.81, 37.87)
+)
+
+#  DİKDÖRTGEN KUTUYU YIKMAK İÇİN 4 KÖŞEYE GÖRÜNMEZ NOKTA EKLİYORUZ
+df_kose <- data.frame(
+  Sehir = c("K1", "K2", "K3", "K4"),
+  Olum = c(1, 1, 1, 1),
+  Boylam = c(25.5, 44.5, 25.5, 44.5), 
+  Enlem = c(35.5, 35.5, 42.5, 42.5)   
+)
+
+# Gerçek veri ile köşe noktalarını birleştirip matematiksel noktalara çeviriyoruz
+#df_tam <- bind_rows(df_2025, df_kose)
+#df_isopleth <- df_tam[rep(seq_len(nrow(df_tam)), df_tam$Olum), ]
+
+#  KUSURSUZ SINIRLAR İÇİN "TERS MASKE" OLUŞTURMA
+#crs_degeri <- st_crs(turkiye_harita)
+
+# Haritayı kapsayacak devasa bir boş dikdörtgen kutu yaratıyoruz
+#kutu <- st_polygon(list(rbind(c(20, 30), c(50, 30), c(50, 45), c(20, 45), c(20, 30))))
+#kutu_sf <- st_sfc(kutu, crs = crs_degeri)
+
+# Türkiye sınırlarını tek parça yapıp, dev dikdörtgenden çıkarıyoruz (BEYAZ MASKE)
+#turkiye_bilesik <- st_union(turkiye_harita)
+#maske <- st_difference(kutu_sf, turkiye_bilesik)
+
+# İZOPLET HARİTASI TASARIMI (2025 YILI)
+#ggplot() +
+  
+  # EN ALT KATMAN 1: Renk Bantları (2025 yılının yayılan Eşyükselti alanları)
+#  stat_density_2d_filled(data = df_isopleth, 
+#                         aes(x = Boylam, y = Enlem, fill = ..level..), 
+#                         alpha = 0.85, contour_var = "ndensity", bins = 8) +
+  
+  # EN ALT KATMAN 2: Renkleri ayıran beyaz İzoplet Çizgileri
+#  stat_density_2d(data = df_isopleth, 
+ #                 aes(x = Boylam, y = Enlem), 
+  #                color = "white", linewidth = 0.4, contour_var = "ndensity", bins = 8) +
+  
+  # ORTA KATMAN: MASKELEME (Taşan tüm renkleri beyaz maskemizle kapatıyoruz)
+#  geom_sf(data = maske, fill = "white", color = NA) +
+  
+  # ÜST KATMAN: TÜRKİYE SINIRLARI
+ # geom_sf(data = turkiye_harita, fill = NA, color = "#495057", linewidth = 0.5) +
+  
+  # RENK PALETİ: Açık sarıdan koyu kiremite doğru aynı şık geçiş
+ # scale_fill_brewer(palette = "YlOrRd", name = "Kırım Yoğunluğu") +
+  
+  # Şehir İsimleri (Sadece 44 ölümden fazla olan dev havzalar isimlendirilir)
+#  geom_text(data = subset(df_2025, Olum > 40), aes(x = Boylam, y = Enlem, label = Sehir),
+          #  vjust = -1.2, fontface = "bold", size = 3.5, color = "#1a1a1a") +
+  
+  # Haritaya zoom yaparak maskenin beyazlıklarını kadrajdan atıyoruz
+#  coord_sf(xlim = c(25.5, 44.5), ylim = c(35.5, 42.5), expand = FALSE) +
+  
+#  labs(
+#    title = "İş Cinayetleri Topografyası: 2025 Yılı İzoplet (Kontur) Haritası",
+   
+    
+#    x = "", y = ""
+  ) +
+  
+#  theme_void(base_size = 14) +
+#  theme(
+#    plot.title = element_text(face = "bold", size = 16, color = "#212529", margin = margin(t=15, b=8), hjust = 0.5),
+#    plot.subtitle = element_text(size = 11, color = "#495057", margin = margin(b=20), hjust = 0.5),
+#    legend.position = "right",
+ #   legend.title = element_text(face = "bold", size = 11, color = "#212529"),
+ #   plot.background = element_rect(fill = "white", color = NA),
+ #   plot.margin = margin(15, 15, 15, 15)
+  )
+
+```
+

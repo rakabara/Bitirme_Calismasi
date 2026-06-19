@@ -1,0 +1,94 @@
+---
+title: "IntiharKalpKrizi"
+author: "Rafet Ali Kaba"
+date: "2026-06-19"
+output: html_document
+---
+
+```{r}
+# Gerekli Kütüphaneler
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# Windows sistemlerde Türkçe karakter sorununu önleyen komut
+Sys.setlocale("LC_ALL", "Turkish")
+
+# 1. VERİYİ İÇERİ AKTARMA VE TEMİZLEME
+df <- read.csv2("olum_nedenleri.csv")
+names(df)[1] <- "Yil"
+
+# Sadece yılları, İntihar ve Kalp Krizi verilerini seçiyoruz
+df_kelebek <- df %>%
+  filter(Yil != "2013-2025") %>%
+  select(Yil, Intihar, Kalp_Krizi_Beyin_Kanaması) %>%
+  mutate(
+    Yil = as.numeric(as.character(Yil)),
+    Intihar = as.numeric(Intihar),
+    Kalp_Krizi = as.numeric(Kalp_Krizi_Beyin_Kanaması)
+  )
+
+# 2. KELEBEK GRAFİK İÇİN VERİ DÖNÜŞÜMÜ (Diverging Data)
+# İntihar verilerini omurganın soluna atmak için negatif (-1 ile çarpılmış) değere çeviriyoruz
+df_kelebek <- df_kelebek %>%
+  mutate(Intihar_Neg = -Intihar) %>%
+  select(Yil, Kalp_Krizi, Intihar_Neg) %>%
+  pivot_longer(cols = c(Kalp_Krizi, Intihar_Neg), names_to = "Neden", values_to = "Sayi")
+
+# Lejant isimlerini Türkçeleştirme
+df_kelebek$Neden <- ifelse(df_kelebek$Neden == "Kalp_Krizi", "Kalp Krizi / Beyin Kanaması", "İntihar")
+
+# 3. VERİ GAZETECİLİĞİ ODAKLI KELEBEK (BUTTERFLY) GRAFİĞİ TASARIMI
+ggplot(df_kelebek, aes(x = as.factor(Yil), y = Sayi, fill = Neden)) +
+  
+  # Çubukların Çizimi
+  geom_bar(stat = "identity", width = 0.6) +
+  
+  # DOĞRUDAN ETİKETLEME: Çubukların uçlarına ölüm sayılarını yazdırıyoruz
+  # abs() komutu ile soldaki intihar rakamlarının önündeki "eksi" işaretini siliyoruz
+  geom_text(aes(label = abs(Sayi), 
+                hjust = ifelse(Sayi > 0, -0.3, 1.3)), 
+            size = 4, fontface = "bold", color = "#1a1a1a") +
+  
+  # X ve Y Ekseninin yerini değiştirip omurgayı dikleştiriyoruz
+  coord_flip() +
+  
+  # Eksenleri düzenleme: Etiketlere yer açmak için limitleri genişletiyor ve negatif sayıları gizliyoruz
+  scale_y_continuous(labels = abs, limits = c(-130, 340)) +
+  
+  # Editoryal Renk Paleti: Kalp krizi için kan kırmızısı, İntihar için yas siyahı/koyu gri
+  scale_fill_manual(values = c("Kalp Krizi / Beyin Kanaması" = "#cb181d", "İntihar" = "#4d4d4d")) +
+  
+  # Editoryal Bağlam ve Başlıklar
+  labs(
+    title = "Sistemin Fiziksel ve Psikolojik Tahribatı (2013-2025)",
+    subtitle = "Sağ eksen; aşırı çalışma, yetersiz beslenme ve barınma koşullarına bağlı fiziksel iflası gösterirken;\nSol eksen; ekonomik kriz, mobbing ve borç kıskacına bağlı psikolojik çöküşü (İntiharları) yansıtmaktadır.",
+    x = "YILLAR",
+    y = "",
+    
+  ) +
+  
+  # Minimalist Tableau/Veri Gazeteciliği Teması
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 18, color = "#1a1a1a", margin = margin(b=8)),
+    plot.subtitle = element_text(size = 13, color = "#4d4d4d", margin = margin(b=20)),
+    
+    # Lejant ayarları (Üste, başlığın hemen altına hizalama)
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.text = element_text(face = "bold", size = 12),
+    
+    # Y ekseni (Yıllar) ortadaki omurgada belirgin dursun diye kalınlaştırma
+    axis.text.y = element_text(face = "bold", size = 14, color = "black"),
+    axis.text.x = element_blank(), # Alt eksen rakamlarını siliyoruz (Çubuk uçlarında yazılı olduğu için)
+    
+    # Kafa karıştırıcı ızgara çizgilerini tamamen silme
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(20, 20, 20, 20)
+  )
+
+
+```
+

@@ -1,0 +1,57 @@
+---
+title: "MezardaEmeklilik"
+author: "Rafet Ali Kaba"
+date: "2026-06-19"
+output: html_document
+---
+
+```{r}
+# Gerekli Kütüphaneler
+library(ggplot2)
+library(dplyr)
+
+# Windows sistemlerde Türkçe karakter sorununu önleyen komut
+Sys.setlocale("LC_ALL", "Turkish")
+
+# 1. KENDİ HAZIRLADIĞINIZ VERİYİ İÇERİ AKTARMA VE TEMİZLEME
+df_yas <- read.csv2("yasss.csv")
+
+# Sütun isimlerini R'ın bozmasına izin vermeden temizliyoruz
+names(df_yas) <- c("Yil", "Cocuk_14_Alt", "Genc_15_17", "GencEriskin_18_27", "Eriskin_28_50", "Emekli_51_64", "Emekli_65_Ust", "Bilinmeyen")
+
+# 2. SADECE 65+ YAŞ İŞÇİLERİ FİLTRELEME
+df_65_ust <- df_yas %>%
+  select(Yil, Emekli_65_Ust)
+
+# 3. ÇUBUK GRAFİK TASARIMI
+ggplot(df_65_ust, aes(x = as.factor(Yil), y = Emekli_65_Ust)) +
+  
+  # Çubukları yaşlılığı ve hüznü simgeleyen koyu lacivert ile çizdiriyoruz
+  geom_bar(stat = "identity", fill = "darkorange", width = 0.6) +
+  
+  # VURUCU DETAY: Çubukların üzerine o yılın tam ölüm sayısını yazdırıyoruz
+  geom_text(aes(label = Emekli_65_Ust), vjust = -0.5, color = "#1a1a1a", fontface = "bold", size = 4) +
+  
+  # Yazıların grafiğin üst sınırından taşmaması için Y eksenini biraz yükseltiyoruz
+  scale_y_continuous(limits = c(0, max(df_65_ust$Emekli_65_Ust) + 15)) +
+  
+  labs(
+    title = "Mezarda Emeklilik: 65 Yaş ve Üstü İşçi Ölümleri",
+    subtitle = "Türkiye'de yasal emeklilik çağını doldurmuş ya da çoktan aşmış olmasına rağmen,\ngeçinemediği için çalışmak zorunda kalarak hayatını kaybeden işçilerin yıllara göre tırmanışı.",
+    x = "YILLAR",
+    y = "Hayatını Kaybeden 65+ İşçi Sayısı",
+    
+  ) +
+  
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16, color = "#1a1a1a", margin = margin(b=8)),
+    plot.subtitle = element_text(size = 11, color = "#4d4d4d", margin = margin(b=20)),
+    axis.text.x = element_text(angle = 45, hjust = 1, face = "bold", color = "#1a1a1a"),
+    axis.text.y = element_text(face = "bold", color = "#1a1a1a"),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+```
+

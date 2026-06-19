@@ -1,0 +1,73 @@
+göçmen isçi bar chart 
+
+# 1. VERİ SETİNİ OLUŞTURMA: Toplam İşçi Ölümleri vs. Göçmen İşçi Ölümleri (2013-2025)
+# Toplam sayılardan göçmen işçileri çıkararak "Türkiyeli İşçiler" verisini buluyoruz
+YIL <- rep(2013:2025, each = 2)
+Kategori <- rep(c("Türkiyeli İşçi", "Göçmen/Mülteci İşçi"), 13)
+Olum_Sayisi <- c(
+  1235-22, 22,   # 2013
+  1886-53, 53,   # 2014
+  1730-67, 67,   # 2015
+  1970-96, 96,   # 2016
+  2006-88, 88,   # 2017
+  1923-110, 110, # 2018
+  1736-112, 112, # 2019
+  2427-101, 101, # 2020
+  2170-94, 94,   # 2021
+  1843-90, 90,   # 2022
+  1932-106, 106, # 2023
+  1897-94, 94,   # 2024
+  2105-91, 91    # 2025
+)
+
+df <- data.frame(YIL, Kategori, Olum_Sayisi)
+
+# Veri Hikayeciliği Kuralı: Vurgulanmak istenen kitleyi (Göçmenler) X eksenine en yakın (Alta) koymak
+df$Kategori <- factor(df$Kategori, levels = c("Göçmen/Mülteci İşçi", "Türkiyeli İşçi"))
+
+# 2. VERİ GAZETECİLİĞİ ODAKLI YIĞILMIŞ SÜTUN GRAFİĞİ (STACKED BAR CHART)
+ggplot(df, aes(x = YIL, y = Olum_Sayisi, fill = Kategori)) +
+  
+  # Yığılmış sütun formatını oluşturma (stat="identity" ile veriyi olduğu gibi okutma)
+  geom_bar(stat = "identity", width = 0.7) +
+  
+  # Renk Zıtlığı (Color Cues): Göçmen işçileri dikkat çekici kırmızıyla, diğer ölümleri nötr griyle vurgulama
+  scale_fill_manual(values = c("Göçmen/Mülteci İşçi" = "#b2182b", "Türkiyeli İşçi" = "grey80")) +
+  
+  # Eksenleri düzenleme (Kesirli yılları tam sayı yapma ve Y ekseni sınırlarını belirleme)
+  scale_x_continuous(breaks = seq(2013, 2025, 1)) +
+  scale_y_continuous(breaks = seq(0, 2600, by=500), limits = c(0, 2500)) +
+  
+  # 3. EDİTORYAL BAĞLAM: Grafiğin içine metin yığmadan hikayeyi başlıklara taşıma
+  labs(
+    title = "Tüm İş Cinayetleri İçinde Göçmen ve Mülteci Emeğinin Payı",
+    subtitle = "2013-2025 yılları arasında katledilen yaklaşık 25 bin işçinin 1124'ünü;\nçoğunluğu Suriyeli ve Afganistanlı olan güvencesiz göçmen/mülteci işçiler oluşturdu.",
+    x = "YIL", 
+    y = "Hayatını Kaybeden İşçi Sayısı",
+    caption = "Veri Kaynağı: İSİG Meclisi 2013-2025 Raporları | Görselleştirme: [Adınız]"
+  ) +
+  
+  # 4. GÖRSEL TEMİZLİK (Decluttering): Arka planı temizleme ve Tufte prensipleri
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 18, color = "black"),
+    plot.subtitle = element_text(size = 13, color = "black", margin = margin(t=5, b=20)),
+    plot.caption = element_text(size = 10, color = "grey50", hjust = 0, margin = margin(t=15)),
+    
+    # Lejantı (Göstergeyi) üste alarak grafiği yatayda daraltmama
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.text = element_text(face = "bold", size = 12),
+    
+    # Kafa karıştırıcı dikey ve ara ızgaraları (grid) tamamen kaldırma
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.y = element_line(color = "grey90", size = 0.5), # Sadece okumayı kolaylaştıran ince yatay çizgiler
+    
+    axis.text.x = element_text(color = "grey30", face = "bold", margin = margin(t=10)),
+    axis.text.y = element_text(color = "grey40", face = "bold"),
+    axis.title.y = element_text(color = "grey40", size = 12, margin = margin(r=15)),
+    axis.title.x = element_text(color = "grey40", size = 12, margin = margin(t=10))
+  )
+ 
